@@ -10,10 +10,11 @@
 #include <limits.h>
 using namespace std;
 
-const string lines[] = {"blue1", "blue2", "yellow", "magenta"};
+const string lines[] = {"blue1", "blue2", "green1", "green2", "grey", "magenta", "orange", "pink", "red", "violet", "yellow"};
 vector<vector<int>> graph;
 unordered_map<int, string> idName;
 unordered_map<string, int> nameId;
+unordered_map<string, vector<int>> lineId;
 unordered_map<int, vector<string>> idLine;
 int totalNumStations;
 
@@ -25,10 +26,15 @@ int totalNumStations;
 int totalStations(){
     int numberStations = 0;
     string line;
-    //string lineColor;
+    string lineColor;
     for(string it : lines){
-        //if(isdigit(it.back())) lineColor = it.substr(0, it.size()-1);
-        //else lineColor = it;
+        if(isdigit(it.back())){
+            lineColor = it;
+            //lineColor = it.substr(0, it.size()-1);
+        }
+        else{
+            lineColor = it;
+        }
 
         string name = it + ".txt";
         ifstream myline(name.c_str());
@@ -36,9 +42,9 @@ int totalStations(){
             if(nameId.find(line) == nameId.end()){
                 idName[numberStations] = line;
                 nameId[line] = numberStations;
-                //idLine[numberStations].push_back(lineColor);
                 ++numberStations;
             }
+
         }
         myline.close();
     }
@@ -55,6 +61,8 @@ void addToGraph(){
         ifstream myline(name.c_str());
         getline(myline, line1);
         while(getline(myline, line2)){
+            idLine[ nameId[line1] ].push_back(it);
+            lineId[ line1 ].push_back( nameId[line1] );
             graph[nameId[line1]][nameId[line2]] = 2;
             graph[nameId[line2]][nameId[line1]] = 2;
             line1 = line2;
@@ -83,18 +91,39 @@ void printGraph(){
 }
 
 void printMap(){
-    for(auto it: idLine){
-        cout << it.first;
-        for(auto it2: it.second){
-            cout << it2;
-        }
-        cout << endl;
+    for(auto it: idName){
+        cout << it.first << ":" << it.second << endl;
     }
 }
 
 void printVector(vector<int> input){
     for(auto it: input){
-        cout << idName[it] << " -> ";
+        cout << idName[it] << " (";
+        for(auto color: idLine[it]){
+            cout << color << " ";
+        }
+        cout << ")" << endl;
+    }
+    cout << "\b\b\b\b    " << endl;
+}
+
+void printLineId(){
+    for(auto line:lineId){
+        cout << line.first << ":";
+        for(auto id:line.second){
+            cout << id << " ";
+        }
+        cout << endl;
+    }
+}
+
+void printIdLine(){
+    for(auto it: idLine){
+        cout << it.first << ":";
+        for(auto it2:it.second){
+            cout << it2 << " ";
+        }
+        cout << endl;
     }
 }
 
@@ -173,11 +202,14 @@ int main(){
     totalNumStations = totalStations();
     fillGraph();
     addToGraph();
-    printGraph();
+    //printLineId();
+    //printIdLine();
+    //printGraph();
     printVector(shortestTimePath(0, 93));
-    printMap();
-    cout << endl << endl;
-    searchName("SECTOR 1");
+    //cout << idName[0] << endl << idName[93] << endl;
+    //printMap();
+    //cout << endl << endl;
+    //searchName("SECTOR 1");
     //src = sourceStation();
     //dest = destStation();
     //choice = shortestWhat();
