@@ -1,0 +1,3 @@
+/home/anshg/repos/dsa_project/build/CMakeFiles/dsa_project.dir
+/home/anshg/repos/dsa_project/build/CMakeFiles/edit_cache.dir
+/home/anshg/repos/dsa_project/build/CMakeFiles/rebuild_cache.dir
