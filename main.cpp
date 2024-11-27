@@ -1,4 +1,5 @@
 //#include "definitions.h"
+#include <cstring>
 #include <vector>
 #include <iostream>
 #include <queue>
@@ -13,6 +14,7 @@ const string lines[] = {"blue1", "blue2", "yellow", "magenta"};
 vector<vector<int>> graph;
 unordered_map<int, string> idName;
 unordered_map<string, int> nameId;
+unordered_map<int, vector<string>> idLine;
 int totalNumStations;
 
 // Computes total number of stations by reading from lines specified in lines[]
@@ -23,13 +25,18 @@ int totalNumStations;
 int totalStations(){
     int numberStations = 0;
     string line;
+    //string lineColor;
     for(string it : lines){
+        //if(isdigit(it.back())) lineColor = it.substr(0, it.size()-1);
+        //else lineColor = it;
+
         string name = it + ".txt";
         ifstream myline(name.c_str());
         while(getline(myline, line)){
             if(nameId.find(line) == nameId.end()){
                 idName[numberStations] = line;
                 nameId[line] = numberStations;
+                //idLine[numberStations].push_back(lineColor);
                 ++numberStations;
             }
         }
@@ -76,15 +83,18 @@ void printGraph(){
 }
 
 void printMap(){
-    for(auto it: idName){
-        cout << it.first << "\t" << it.second << endl;
+    for(auto it: idLine){
+        cout << it.first;
+        for(auto it2: it.second){
+            cout << it2;
+        }
+        cout << endl;
     }
 }
 
-template <typename T>
-void printVector(vector<T> input){
+void printVector(vector<int> input){
     for(auto it: input){
-        cout << it << " ";
+        cout << idName[it] << " -> ";
     }
 }
 
@@ -128,12 +138,46 @@ vector<int> shortestTimePath(int src, int dest){
     return path;
 }
 
+// Knuth-Morris-Pratt algorithm
+// for substring matching
+int knuthMorrisPratt(string searchFrom, string stringToSearch) {
+    int i = 0, j = 0, m = stringToSearch.length(), n = searchFrom.length();
+    stringToSearch = ' ' + stringToSearch; //just shifting the stringToSearch indices by 1
+    vector < int > piTable(m + 1, 0);
+    for (int i = 2; i <= m; i++) {
+        while (j <= m && stringToSearch[j + 1] == stringToSearch[i])
+            piTable[i++] = ++j;
+        j = 0;
+    }
+    j = 0;
+    for (int i = 0; i < n; i++) {
+        if (stringToSearch[j + 1] != searchFrom[i]) {
+            while (j != 0 && stringToSearch[j + 1] != searchFrom[i])
+                j = piTable[j];
+        }
+        j++;
+        if (j == m) return i - m + 1;
+    }
+    return -1;
+
+}
+
+void searchName(string toSearch){
+    for(auto it: nameId){
+        if(knuthMorrisPratt(it.first, toSearch) != -1) cout << it.first << endl;
+    }
+}
+
+
 int main(){
     totalNumStations = totalStations();
     fillGraph();
     addToGraph();
     printGraph();
     printVector(shortestTimePath(0, 93));
+    printMap();
+    cout << endl << endl;
+    searchName("SECTOR 1");
     //src = sourceStation();
     //dest = destStation();
     //choice = shortestWhat();
