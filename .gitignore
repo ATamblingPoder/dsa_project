@@ -1,4 +1,7 @@
 build/
-*.exe
-*.
-main
+*/*
+!*/*.cpp
+!*/*.h
+!*/*.txt
+!*/*.md
+!.gitignore
