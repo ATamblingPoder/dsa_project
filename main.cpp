@@ -1,4 +1,3 @@
-//#include "definitions.h"
 #include <cstring>
 #include <vector>
 #include <iostream>
@@ -30,13 +29,12 @@ int totalStations(){
     for(string it : lines){
         if(isdigit(it.back())){
             lineColor = it;
-            //lineColor = it.substr(0, it.size()-1);
         }
         else{
             lineColor = it;
         }
 
-        string name = it + ".txt";
+        string name = "data/" + it + ".txt";
         ifstream myline(name.c_str());
         while(getline(myline, line)){
             if(nameId.find(line) == nameId.end()){
@@ -57,7 +55,7 @@ void addToGraph(){
     string line1;
     string line2;
     for(string it: lines){
-        string name = it + ".txt";
+        string name = "data/" + it + ".txt";
         ifstream myline(name.c_str());
         getline(myline, line1);
         while(getline(myline, line2)){
@@ -98,7 +96,7 @@ void printMap(){
 
 void printVector(vector<int> input){
     for(auto it: input){
-        cout << idName[it] << " (";
+        cout << it << " " << idName[it] << " (";
         for(auto color: idLine[it]){
             cout << color << " ";
         }
@@ -197,6 +195,47 @@ void searchName(string toSearch){
     }
 }
 
+pair<int, vector<string>> getLine(int id){
+    int numOfLines = idLine[id].size();
+    vector<string> theLine = idLine[id];
+    vector<string> answer;
+    for(auto line: theLine){
+        if(isdigit(line.back())) answer.push_back(line.substr(0, line.size()-1));
+        else answer.push_back(line);
+    }
+    return {numOfLines, answer};
+}
+
+void printAllPaths(int src, int dest, vector<int> &visited, vector<int> &path, int path_index){
+    visited[src] = 1;
+    path[path_index] = src;
+    path_index++;
+
+    if(src == dest){
+        for(int i = 0; i < path_index; i++){
+            cout << path[i] << " ";
+        }
+        cout << endl << endl;
+    }
+    else{
+        for(int j = 0; j < totalNumStations; j++){
+            if(graph[src][j]){
+                if(!visited[j]){
+                    printAllPaths(j, dest, visited, path, path_index);
+                }
+            }
+        }
+    }
+    path_index--;
+    visited[src] = 0;
+}
+
+void actuallPrintAllPaths(int src, int dest){
+    vector<int> visited(totalNumStations);
+    vector<int> path(totalNumStations);
+    int path_index = 0;
+    printAllPaths(src, dest, visited, path, path_index);
+}
 
 int main(){
     totalNumStations = totalStations();
@@ -206,6 +245,12 @@ int main(){
     //printIdLine();
     //printGraph();
     printVector(shortestTimePath(0, 93));
+    pair<int, vector<string>> aaa = getLine(28);
+    cout << aaa.first << ":";
+    for(auto it: aaa.second)
+        cout << it << " ";
+    cout << endl;
+    //actuallPrintAllPaths(0, 93);
     //cout << idName[0] << endl << idName[93] << endl;
     //printMap();
     //cout << endl << endl;
