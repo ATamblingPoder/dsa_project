@@ -291,30 +291,42 @@ void actuallMakeAllPaths(int src, int dest){
 
 // calculates interchanges in a path
 int interchanges(vector<int> path){
+    if (path.size() <= 1) return 0; // No interchanges for single-node paths
     int changes = 0;
     string currentLine;
-    int size = path.size();
-    currentLine = idLine[path[1]][0];
-    for(int i = 0; i < size-1; i++){
-        vector<string> lines = idLine[path[i]];
-        vector<string> nextLines = idLine[path[i+1]];
-        for(auto it: lines){
-            if(find(nextLines.begin(), nextLines.end(), currentLine) == nextLines.end()){
-                currentLine = it;
-                changes++;
-            }
+
+    // Determine the initial line of the first station
+    for (auto line : idLine[path[0]]) {
+        if (find(idLine[path[1]].begin(), idLine[path[1]].end(), line) != idLine[path[1]].end()) {
+            currentLine = line;
+            break;
         }
     }
-    return changes;
-    // last node
 
-    for(int id: path){
-        int cInterchanges = idLine[id].size();
-        size -= cInterchanges;
+    // Traverse the path and count interchanges
+    for (int i = 1; i < path.size(); ++i) {
+        bool lineContinues = false;
+
+        for (auto line : idLine[path[i]]) {
+            if (line == currentLine) {
+                lineContinues = true;
+                break;
+            }
+        }
+
+        // If the current line does not continue, update the line and increment changes
+        if (!lineContinues) {
+            for (auto line : idLine[path[i]]) {
+                if (find(idLine[path[i - 1]].begin(), idLine[path[i - 1]].end(), line) != idLine[path[i - 1]].end()) {
+                    currentLine = line;
+                    break;
+                }
+            }
+            ++changes;
+        }
     }
-    size += 1;
-    size = -size;
-    return size;
+
+    return changes;
 }
 
 // return index of minimum interchange path from
