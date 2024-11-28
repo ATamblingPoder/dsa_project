@@ -454,6 +454,7 @@ double calculateFare(int stations){
     return fare;
 }
 
+// main function to call all other functions
 int main(int argc, char const *argv[]){
     init();
     clear();
