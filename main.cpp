@@ -10,12 +10,30 @@
 using namespace std;
 
 const string lines[] = {"blue1", "blue2", "green1", "green2", "grey", "magenta", "orange", "pink", "red", "violet", "yellow"};
+
 vector<vector<int>> graph;
 unordered_map<int, string> idName;
 unordered_map<string, int> nameId;
 unordered_map<string, vector<int>> lineId;
 unordered_map<int, vector<string>> idLine;
+unordered_map<string, string> colors;
+vector<vector<int>> allPaths;
 int totalNumStations;
+
+
+// ANSI escape codes for colors
+void initColors(){
+    colors["red"] = "\x1b[38;2;255;0;0m";
+    colors["orange"] = "\x1b[38;2;255;165;0m";
+    colors["yellow"] = "\x1b[38;2;255;255;0m";
+    colors["green"] = "\x1b[38;2;0;255;0m";
+    colors["blue"] = "\x1b[38;2;0;0;255m";
+    colors["magenta"] = "\x1b[38;2;255;0;255m";
+    colors["pink"] = "\x1b[38;2;255;192;203m";
+    colors["violet"] = "\x1b[38;2;238;130;238m";
+    colors["normal"] = "\x1b[0m";
+}
+
 
 // Computes total number of stations by reading from lines specified in lines[]
 // Builds idName and nameId which are key-value pairs
@@ -49,32 +67,36 @@ int totalStations(){
     return numberStations;
 }
 
-// Makes the undirected graph
-// Undirected because we can go to any stations connected to the current station
-void addToGraph(){
-    string line1;
-    string line2;
-    for(string it: lines){
-        string name = "data/" + it + ".txt";
-        ifstream myline(name.c_str());
-        getline(myline, line1);
-        while(getline(myline, line2)){
-            idLine[ nameId[line1] ].push_back(it);
-            lineId[ line1 ].push_back( nameId[line1] );
-            graph[nameId[line1]][nameId[line2]] = 2;
-            graph[nameId[line2]][nameId[line1]] = 2;
-            line1 = line2;
-        }
-        myline.close();
-    }
-}
-
 // Fills graph with zeroes
 void fillGraph(){
     int dimensions = totalNumStations;
     vector<int> row(dimensions);
     for(int i = 0; i < dimensions; i++){
         graph.push_back(row);
+    }
+}
+
+// Makes the undirected graph
+// Undirected because we can go to any stations connected to the current station
+void addToGraph(){
+    fillGraph();
+    string line1 = "";
+    string line2 = "";
+    for(string it: lines){
+        string name = "data/" + it + ".txt";
+        ifstream myline(name.c_str());
+        getline(myline, line1);
+        if( find(idLine[nameId[line1]].begin(), idLine[nameId[line1]].end(), it) == idLine[nameId[line1]].end() ){
+            idLine[ nameId[line1] ].push_back(it);
+            lineId[ line1 ].push_back( nameId[line1] );
+        }
+        while(getline(myline, line2)){
+            idLine[ nameId[line2] ].push_back(it);
+            lineId[ line2 ].push_back( nameId[line2] );
+            graph[nameId[line1]][nameId[line2]] = 2;
+            graph[nameId[line2]][nameId[line1]] = 2;
+            line1 = line2;
+        }
     }
 }
 
@@ -165,6 +187,28 @@ vector<int> shortestTimePath(int src, int dest){
     return path;
 }
 
+
+// Outputs colored path
+void printColoredPath(vector<int> path){
+    int stations = path.size();
+    string currentLine;
+    for(int i = 0; i < stations-1; i++){
+        vector<string> currentNodeColors = idLine[path[i]];
+        vector<string> nextNodeColors = idLine[path[i+1]];
+        for(auto it: currentNodeColors){
+            bool notInNext = (find(nextNodeColors.begin(), nextNodeColors.end(), it) == nextNodeColors.end());
+            if(!notInNext){
+                if(isdigit(it.back())) it = it.substr(0, it.size()-1);
+                currentLine = it;
+                break;
+            }
+        }
+        cout << colors[currentLine] << idName[path[i]] << colors["normal"] << " -> ";
+    }
+    cout << colors[currentLine] << idName[path[stations-1]] << colors["normal"] << endl;
+    // for last index
+}
+
 // Knuth-Morris-Pratt algorithm
 // for substring matching
 int knuthMorrisPratt(string searchFrom, string stringToSearch) {
@@ -189,12 +233,14 @@ int knuthMorrisPratt(string searchFrom, string stringToSearch) {
 
 }
 
+// returns all stations matching any substring
 void searchName(string toSearch){
     for(auto it: nameId){
         if(knuthMorrisPratt(it.first, toSearch) != -1) cout << it.first << endl;
     }
 }
 
+// unused? apparently
 pair<int, vector<string>> getLine(int id){
     int numOfLines = idLine[id].size();
     vector<string> theLine = idLine[id];
@@ -206,22 +252,26 @@ pair<int, vector<string>> getLine(int id){
     return {numOfLines, answer};
 }
 
-void printAllPaths(int src, int dest, vector<int> &visited, vector<int> &path, int path_index){
+// fills allPaths with all the possible paths
+void makeAllPaths(int src, int dest, vector<int> &visited, vector<int> &path, int path_index){
     visited[src] = 1;
     path[path_index] = src;
     path_index++;
 
     if(src == dest){
+        vector<int> aPath;
         for(int i = 0; i < path_index; i++){
-            cout << path[i] << " ";
+            //cout << path[i] << " ";
+            aPath.push_back(path[i]);
         }
-        cout << endl << endl;
+        allPaths.push_back(aPath);
+        //cout << endl << endl;
     }
     else{
         for(int j = 0; j < totalNumStations; j++){
             if(graph[src][j]){
                 if(!visited[j]){
-                    printAllPaths(j, dest, visited, path, path_index);
+                    makeAllPaths(j, dest, visited, path, path_index);
                 }
             }
         }
@@ -230,31 +280,72 @@ void printAllPaths(int src, int dest, vector<int> &visited, vector<int> &path, i
     visited[src] = 0;
 }
 
-void actuallPrintAllPaths(int src, int dest){
+// calls the recursive makeAllPaths
+void actuallMakeAllPaths(int src, int dest){
+    allPaths.clear();
+    allPaths.shrink_to_fit();
     vector<int> visited(totalNumStations);
     vector<int> path(totalNumStations);
     int path_index = 0;
-    printAllPaths(src, dest, visited, path, path_index);
+    makeAllPaths(src, dest, visited, path, path_index);
+}
+
+// calculates interchanges in a path
+int interchanges(vector<int> path){
+    int size = path.size();
+    for(int id: path){
+        int cInterchanges = idLine[id].size();
+        size -= cInterchanges;
+    }
+    size += 1;
+    size = -size;
+    return size;
+}
+
+// return index of minimum interchange path from
+// allPaths
+vector<int> leastInterchange(){
+    int leastIndex = 0;
+    for(int i = 0; i < allPaths.size(); i++){
+        if(interchanges(allPaths[i]) <= interchanges(allPaths[leastIndex])){
+            if(allPaths[i].size() <= allPaths[leastIndex].size()){
+                leastIndex = i;
+            }
+        }
+    }
+    return allPaths[leastIndex];
+}
+
+// initializes buncha stuff
+void init(){
+    totalNumStations = totalStations();
+    initColors();
+    addToGraph();
+}
+
+void clear(){
+    cout << "\x1b[2J\x1b[H";
 }
 
 int main(){
-    totalNumStations = totalStations();
-    fillGraph();
-    addToGraph();
+    init();
+    clear();
     //printLineId();
     //printIdLine();
     //printGraph();
-    printVector(shortestTimePath(0, 93));
-    pair<int, vector<string>> aaa = getLine(28);
-    cout << aaa.first << ":";
-    for(auto it: aaa.second)
-        cout << it << " ";
-    cout << endl;
-    //actuallPrintAllPaths(0, 93);
+    //printVector(shortestTimePath(0, 16));
+    //printColoredPath(shortestTimePath(0, 16));
+    //for(auto it:allPaths){
+    //    for(auto it2:it){
+    //        cout << it2 << " ";
+    //    }
+    //    cout << endl << endl;
+    //}
+    //cout <<allPaths.size() << endl;
     //cout << idName[0] << endl << idName[93] << endl;
     //printMap();
     //cout << endl << endl;
-    //searchName("SECTOR 1");
+    searchName("DWARKA");
     //src = sourceStation();
     //dest = destStation();
     //choice = shortestWhat();
