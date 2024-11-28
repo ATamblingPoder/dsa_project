@@ -230,7 +230,6 @@ int knuthMorrisPratt(string searchFrom, string stringToSearch) {
         if (j == m) return i - m + 1;
     }
     return -1;
-
 }
 
 // returns all stations matching any substring
@@ -292,7 +291,23 @@ void actuallMakeAllPaths(int src, int dest){
 
 // calculates interchanges in a path
 int interchanges(vector<int> path){
+    int changes = 0;
+    string currentLine;
     int size = path.size();
+    currentLine = idLine[path[1]][0];
+    for(int i = 0; i < size-1; i++){
+        vector<string> lines = idLine[path[i]];
+        vector<string> nextLines = idLine[path[i+1]];
+        for(auto it: lines){
+            if(find(nextLines.begin(), nextLines.end(), currentLine) == nextLines.end()){
+                currentLine = it;
+                changes++;
+            }
+        }
+    }
+    return changes;
+    // last node
+
     for(int id: path){
         int cInterchanges = idLine[id].size();
         size -= cInterchanges;
@@ -327,28 +342,126 @@ void clear(){
     cout << "\x1b[2J\x1b[H";
 }
 
-int main(){
+void title(){
+    string line;
+    fstream myfile("data/figlet.txt");
+    cout << "\033[30;47m";
+    while(getline(myfile, line)){
+        cout << line << endl;
+    }
+    cout << colors["normal"];
+    myfile.close();
+}
+
+int sourceStation(){
+    clear();
+    title();
+    string srcStation;
+    cout << colors["yellow"] << "DESTINATION" << colors["normal"] << endl;
+    cout << "Search station name: ";
+    getline(cin, srcStation);
+    searchName(srcStation);
+    if(nameId.find(srcStation) != nameId.end()){
+        return nameId[srcStation];
+    }
+    cout << endl << endl;
+    cout << colors["green"] << "Enter station name: " << colors["normal"];
+    getline(cin, srcStation);
+    if(nameId.find(srcStation) != nameId.end()){
+        return nameId[srcStation];
+    }
+    else{
+        cout << colors["normal"] << colors["red"] << "Invalid Station Name..." << endl;
+        cout << colors["normal"];
+        return sourceStation();
+    }
+}
+
+int destStation(int src){
+    clear();
+    title();
+    vector<string> srcColors = idLine[src];
+    if(isdigit(srcColors[0].back())) srcColors[0] = srcColors[0].substr(0, srcColors[0].size()-1);
+    cout << colors[srcColors[0]] << idName[src] << colors["normal"];
+    cout << " ---- ?" << endl;
+    string dstStation;
+    cout << "Search station name: ";
+    getline(cin, dstStation);
+    searchName(dstStation);
+    if(nameId.find(dstStation) != nameId.end()){
+        return nameId[dstStation];
+    }
+    cout << endl << endl;
+    cout << colors["green"] << "Enter station name: " << colors["normal"];
+    getline(cin, dstStation);
+    if(nameId.find(dstStation) != nameId.end()){
+        return nameId[dstStation];
+    }
+    else{
+        cout << colors["normal"] << colors["red"] << "Invalid Station Name..." << endl;
+        cout << colors["normal"];
+        return destStation(src);
+    }
+}
+
+// pretty print
+void prettyPrint(int src, int dest){
+    clear();
+    title();
+    vector<string> srcColors = idLine[src];
+    if(isdigit(srcColors[0].back())) srcColors[0] = srcColors[0].substr(0, srcColors[0].size()-1);
+    cout << colors[srcColors[0]] << idName[src] << colors["normal"];
+    cout << " ---- ";
+    vector<string> dstColors = idLine[dest];
+    if(isdigit(dstColors[0].back())) dstColors[0] = dstColors[0].substr(0, dstColors[0].size()-1);
+    cout << colors[dstColors[0]] << idName[dest] << colors["normal"];
+    cout << endl;
+}
+
+// Calculate fare
+double calculateFare(int stations){
+    double fare = 0;
+    if (stations <= 2){
+        fare = 10;
+    }
+    else if (stations <= 5){
+        fare = 20;
+    }
+    else if (stations <= 12){
+        fare = 30;
+    }
+    else if (stations <= 21){
+        fare = 40;
+    }
+    else if (stations <= 32){
+        fare = 50;
+    }
+    else{
+        fare = 60;
+    }
+    return fare;
+}
+
+int main(int argc, char const *argv[]){
     init();
     clear();
-    //printLineId();
-    //printIdLine();
-    //printGraph();
-    //printVector(shortestTimePath(0, 16));
-    //printColoredPath(shortestTimePath(0, 16));
-    //for(auto it:allPaths){
-    //    for(auto it2:it){
-    //        cout << it2 << " ";
-    //    }
-    //    cout << endl << endl;
-    //}
-    //cout <<allPaths.size() << endl;
-    //cout << idName[0] << endl << idName[93] << endl;
-    //printMap();
-    //cout << endl << endl;
-    searchName("DWARKA");
-    //src = sourceStation();
-    //dest = destStation();
-    //choice = shortestWhat();
-    //givePath(src, dest, choice);
+    title();
+    int src, dest, choice;
+    src = sourceStation();
+    dest = destStation(src);
+    prettyPrint(src, dest);
+    cout << endl << colors["green"] << "Shortest Time Path:      \t\t\t" << colors["normal"];
+    int srcStations = shortestTimePath(src, dest).size();
+    cout << 2*srcStations << " minutes";
+    cout << "\t\t\t" << calculateFare(srcStations) << " ₹" << endl;
+    printColoredPath(shortestTimePath(src, dest));
+    cout << endl << colors["yellow"] << "Minimum Interchange Path:\t\t\t" << colors["normal"];
+    actuallMakeAllPaths(src, dest);
+    int dstStations = leastInterchange().size();
+    cout << 2*dstStations << " minutes";
+    cout << "\t\t\t" << calculateFare(dstStations) << " ₹" << endl;
+    printColoredPath(leastInterchange());
+    allPaths.clear();
+    allPaths.shrink_to_fit();
     return 0;
 }
